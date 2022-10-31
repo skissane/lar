@@ -46,6 +46,8 @@
  *  ** CP/M is a trademark of Digital Research.
  */
 
+#include <stdlib.h>
+#include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -92,12 +94,10 @@ int     errcnt, nfiles, nslots;
 bool	verbose = false;
 char	*cmdname;
 
-char   *getname(), *sprintf();
-int	update(), reorg(), table(), extract(), print(), delete();
+char   *getname(char *nm, char *ex); //, *sprintf();
+int	update(char *name), reorg(char *name), table(char *lib), extract(char *name), print(char *name), delete(char *lname);
 
-main (argc, argv)
-int	argc;
-char  **argv;
+main (int argc, char **argv)
 {
     register char *flagp;
     char   *aname;			/* name of library file */
@@ -148,7 +148,7 @@ char  **argv;
 }
 
 /* print error message and exit */
-help () {
+help (void) {
     fprintf (stderr, "Usage: %s {utepdr}[v] library [files] ...\n", cmdname);
     fprintf (stderr, "Functions are:\n\tu - Update, add files to library\n");
     fprintf (stderr, "\tt - Table of contents\n");
@@ -161,31 +161,28 @@ help () {
     exit (1);
 }
 
-conflict() {
+conflict(void) {
    fprintf(stderr,"Conficting keys\n");
    help();
 }
 
-error (str)
-char   *str;
+error (char *str)
 {
     fprintf (stderr, "%s: %s\n", cmdname, str);
     exit (1);
 }
 
-cant (name)
-char   *name;
+cant (char *name)
 {
-    extern int  errno;
-    extern char *sys_errlist[];
+//  extern int  errno;
+//  extern char *sys_errlist[];
 
     fprintf (stderr, "%s: %s\n", name, sys_errlist[errno]);
     exit (1);
 }
 
 /* Get file names, check for dups, and initialize */
-filenames (ac, av)
-char  **av;
+filenames (int ac, char **av)
 {
     register int    i, j;
 
@@ -206,8 +203,7 @@ char  **av;
 	    }
 }
 
-table (lib)
-char   *lib;
+table (char *lib)
 {
     FILE   *lfd;
     register int    i, total;
@@ -254,8 +250,7 @@ char   *lib;
     not_found ();
 }
 
-getdir (f)
-FILE *f;
+getdir (FILE *f)
 {
 
     rewind(f);
@@ -269,8 +264,7 @@ FILE *f;
 	error ("Can't read directory - is it a library?");
 }
 
-putdir (f)
-FILE *f;
+putdir (FILE *f)
 {
 
     rewind(f);
@@ -278,8 +272,7 @@ FILE *f;
 	error ("Can't write directory - library may be botched");
 }
 
-initdir (f)
-FILE *f;
+initdir (FILE *f)
 {
     register int    i;
     int     numsecs;
@@ -315,8 +308,7 @@ FILE *f;
 }
 
 /* convert nm.ex to a Unix style string */
-char   *getname (nm, ex)
-char   *nm, *ex;
+char   *getname (char *nm, char *ex)
 {
     static char namebuf[14];
     register char  *cp, *dp;
@@ -332,8 +324,7 @@ char   *nm, *ex;
     return namebuf;
 }
 
-putname (cpmname, unixname)
-char   *cpmname, *unixname;
+putname (char *cpmname, char *unixname)
 {
     register char  *p1, *p2;
 
@@ -354,8 +345,7 @@ char   *cpmname, *unixname;
 }
 
 /* filarg - check if name matches argument list */
-filarg (name)
-char   *name;
+filarg (char *name)
 {
     register int    i;
 
@@ -371,7 +361,7 @@ char   *name;
     return 0;
 }
 
-not_found () {
+not_found (void) {
     register int    i;
 
     for (i = 0; i < nfiles; i++)
@@ -382,21 +372,17 @@ not_found () {
 }
 
 
-extract(name)
-char *name;
+extract(char *name)
 {
 	getfiles(name, false);
 }
 
-print(name)
-char *name;
+print(char *name)
 {
 	getfiles(name, true);
 }
 
-getfiles (name, pflag)
-char   *name;
-bool	pflag;
+getfiles (char *name, bool pflag)
 {
     FILE *lfd, *ofd;
     register int    i;
@@ -433,9 +419,7 @@ bool	pflag;
     not_found ();
 }
 
-acopy (fdi, fdo, nsecs)
-FILE *fdi, *fdo;
-register unsigned int nsecs;
+acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs)
 {
     register int    i, c;
     int	    textfile = 1;
@@ -457,8 +441,7 @@ register unsigned int nsecs;
 	 }
 }
 
-update (name)
-char   *name;
+update (char *name)
 {
     FILE *lfd;
     register int    i;
@@ -482,9 +465,7 @@ char   *name;
     VOID fclose (lfd);
 }
 
-addfil (name, lfd)
-char   *name;
-FILE *lfd;
+addfil (char *name, FILE *lfd)
 {
     FILE	*ifd;
     register int secoffs, numsecs;
@@ -520,8 +501,7 @@ FILE *lfd;
     VOID fclose (ifd);
 }
 
-fcopy (ifd, ofd)
-FILE *ifd, *ofd;
+fcopy (FILE *ifd, FILE *ofd)
 {
     register int total = 0;
     register int i, n;
@@ -539,8 +519,7 @@ FILE *ifd, *ofd;
     return total;
 }
 
-delete (lname)
-char   *lname;
+delete (char *lname)
 {
     FILE *f;
     register int    i;
@@ -566,8 +545,7 @@ char   *lname;
     VOID fclose (f);
 }
 
-reorg (name)
-char  *name;
+reorg (char *name)
 {
     FILE *olib, *nlib;
     int oldsize;
@@ -620,9 +598,7 @@ char  *name;
 
 }
 
-copyentry( old, of, new, nf )
-struct ludir *old, *new;
-FILE *of, *nf;
+copyentry(struct ludir *old, FILE *of, struct ludir *new, FILE *nf)
 {
     register int secoffs, numsecs;
     char buf[SECTOR];
@@ -646,9 +622,7 @@ FILE *of, *nf;
     }
 }
 
-copymem(dst, src, n)
-register char *dst, *src;
-register unsigned int n;
+copymem(register char *dst, register char *src, register unsigned int n)
 {
 	while(n-- != 0)
 		*dst++ = *src++;
