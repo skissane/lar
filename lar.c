@@ -46,10 +46,13 @@
  *  ** CP/M is a trademark of Digital Research.
  */
 
+#include <stdnoreturn.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+#include <unistd.h>
 
 #define ACTIVE	00
 #define UNUSED	0xff
@@ -95,13 +98,25 @@ bool	verbose = false;
 char	*cmdname;
 
 char   *getname(char *nm, char *ex); //, *sprintf();
-int	update(char *name), reorg(char *name), table(char *lib), extract(char *name), print(char *name), delete(char *lname);
+void	update(char *name), reorg(char *name), table(char *lib), extract(char *name), print(char *name), delete(char *lname);
+void	help(void);
+void	filenames (int ac, char **av);
+noreturn void conflict(void);
+void	getdir (FILE *f);
+int	filarg (char *name);
+void	not_found (void);
+void	getfiles (char *name, bool pflag);
+void	acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs);
+void	addfil (char *name, FILE *lfd);
+int	fcopy (FILE *ifd, FILE *ofd);
+void	copymem(register char *dst, register char *src, register unsigned int n);
+void	copyentry(struct ludir *old, FILE *of, struct ludir *new, FILE *nf);
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
     register char *flagp;
     char   *aname;			/* name of library file */
-    int	   (*function)() = NULL;	/* function to do on library */
+    void   (*function)(char*) = NULL;	/* function to do on library */
 /* set the function to be performed, but detect conflicts */
 #define setfunc(val)	if(function != NULL) conflict(); else function = val
 
@@ -145,10 +160,11 @@ main (int argc, char **argv)
     }
 
     (*function)(aname);
+    return 0;
 }
 
 /* print error message and exit */
-help (void) {
+noreturn void help (void) {
     fprintf (stderr, "Usage: %s {utepdr}[v] library [files] ...\n", cmdname);
     fprintf (stderr, "Functions are:\n\tu - Update, add files to library\n");
     fprintf (stderr, "\tt - Table of contents\n");
@@ -161,28 +177,25 @@ help (void) {
     exit (1);
 }
 
-conflict(void) {
+noreturn void conflict(void) {
    fprintf(stderr,"Conficting keys\n");
    help();
 }
 
-error (char *str)
+noreturn void error (char *str)
 {
     fprintf (stderr, "%s: %s\n", cmdname, str);
     exit (1);
 }
 
-cant (char *name)
+noreturn void cant (char *name)
 {
-//  extern int  errno;
-//  extern char *sys_errlist[];
-
     fprintf (stderr, "%s: %s\n", name, sys_errlist[errno]);
     exit (1);
 }
 
 /* Get file names, check for dups, and initialize */
-filenames (int ac, char **av)
+void filenames (int ac, char **av)
 {
     register int    i, j;
 
@@ -203,7 +216,7 @@ filenames (int ac, char **av)
 	    }
 }
 
-table (char *lib)
+void table (char *lib)
 {
     FILE   *lfd;
     register int    i, total;
@@ -225,12 +238,13 @@ table (char *lib)
 	case ACTIVE:
 		active++;
 		uname = getname(ldir[i].l_name, ldir[i].l_ext);
-		if (filarg (uname))
+		if (filarg (uname)) {
 		    if(verbose)
 			printf ("%-12s   %4d %4d\n", uname,
 			    wtoi (ldir[i].l_off), wtoi (ldir[i].l_len));
 		    else
 			printf ("%s\n", uname);
+		}
 		total += wtoi(ldir[i].l_len);
 		break;
 	case UNUSED:
@@ -250,7 +264,7 @@ table (char *lib)
     not_found ();
 }
 
-getdir (FILE *f)
+void getdir (FILE *f)
 {
 
     rewind(f);
@@ -264,7 +278,7 @@ getdir (FILE *f)
 	error ("Can't read directory - is it a library?");
 }
 
-putdir (FILE *f)
+void putdir (FILE *f)
 {
 
     rewind(f);
@@ -272,7 +286,7 @@ putdir (FILE *f)
 	error ("Can't write directory - library may be botched");
 }
 
-initdir (FILE *f)
+void initdir (FILE *f)
 {
     register int    i;
     int     numsecs;
@@ -324,7 +338,7 @@ char   *getname (char *nm, char *ex)
     return namebuf;
 }
 
-putname (char *cpmname, char *unixname)
+void putname (char *cpmname, char *unixname)
 {
     register char  *p1, *p2;
 
@@ -345,7 +359,7 @@ putname (char *cpmname, char *unixname)
 }
 
 /* filarg - check if name matches argument list */
-filarg (char *name)
+int filarg (char *name)
 {
     register int    i;
 
@@ -361,7 +375,7 @@ filarg (char *name)
     return 0;
 }
 
-not_found (void) {
+void not_found (void) {
     register int    i;
 
     for (i = 0; i < nfiles; i++)
@@ -372,17 +386,17 @@ not_found (void) {
 }
 
 
-extract(char *name)
+void extract(char *name)
 {
 	getfiles(name, false);
 }
 
-print(char *name)
+void print(char *name)
 {
 	getfiles(name, true);
 }
 
-getfiles (char *name, bool pflag)
+void getfiles (char *name, bool pflag)
 {
     FILE *lfd, *ofd;
     register int    i;
@@ -419,7 +433,7 @@ getfiles (char *name, bool pflag)
     not_found ();
 }
 
-acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs)
+void acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs)
 {
     register int    i, c;
     int	    textfile = 1;
@@ -441,7 +455,7 @@ acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs)
 	 }
 }
 
-update (char *name)
+void update (char *name)
 {
     FILE *lfd;
     register int    i;
@@ -465,7 +479,7 @@ update (char *name)
     VOID fclose (lfd);
 }
 
-addfil (char *name, FILE *lfd)
+void addfil (char *name, FILE *lfd)
 {
     FILE	*ifd;
     register int secoffs, numsecs;
@@ -501,7 +515,7 @@ addfil (char *name, FILE *lfd)
     VOID fclose (ifd);
 }
 
-fcopy (FILE *ifd, FILE *ofd)
+int fcopy (FILE *ifd, FILE *ofd)
 {
     register int total = 0;
     register int i, n;
@@ -519,7 +533,7 @@ fcopy (FILE *ifd, FILE *ofd)
     return total;
 }
 
-delete (char *lname)
+void delete (char *lname)
 {
     FILE *f;
     register int    i;
@@ -545,7 +559,7 @@ delete (char *lname)
     VOID fclose (f);
 }
 
-reorg (char *name)
+void reorg (char *name)
 {
     FILE *olib, *nlib;
     int oldsize;
@@ -595,10 +609,9 @@ reorg (char *name)
     else
 	fprintf(stderr,"Errors, library not updated\n");
     VOID unlink(tmpname);
-
 }
 
-copyentry(struct ludir *old, FILE *of, struct ludir *new, FILE *nf)
+void copyentry(struct ludir *old, FILE *of, struct ludir *new, FILE *nf)
 {
     register int secoffs, numsecs;
     char buf[SECTOR];
@@ -622,7 +635,7 @@ copyentry(struct ludir *old, FILE *of, struct ludir *new, FILE *nf)
     }
 }
 
-copymem(register char *dst, register char *src, register unsigned int n)
+void copymem(register char *dst, register char *src, register unsigned int n)
 {
 	while(n-- != 0)
 		*dst++ = *src++;
