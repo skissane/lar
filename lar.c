@@ -114,28 +114,28 @@ main (int argc, char **argv)
 
     for(flagp = argv[1]; *flagp; flagp++)
 	switch (*flagp) {
-	case 'u': 
+	case 'u':
 	    setfunc(update);
 	    break;
-	case 't': 
+	case 't':
 	    setfunc(table);
 	    break;
-	case 'e': 
+	case 'e':
 	    setfunc(extract);
 	    break;
-	case 'p': 
+	case 'p':
 	    setfunc(print);
 	    break;
-	case 'd': 
+	case 'd':
 	    setfunc(delete);
 	    break;
-	case 'r': 
+	case 'r':
 	    setfunc(reorg);
 	    break;
 	case 'v':
 	    verbose = true;
 	    break;
-	default: 
+	default:
 	    help ();
     }
 
@@ -371,7 +371,7 @@ not_found (void) {
 	}
 }
 
-
+
 extract(char *name)
 {
 	getfiles(name, false);
@@ -424,10 +424,10 @@ acopy (FILE *fdi, FILE *fdo, register unsigned int nsecs)
     register int    i, c;
     int	    textfile = 1;
 
-    while( nsecs-- != 0) 
+    while( nsecs-- != 0)
 	for(i=0; i<SECTOR; i++) {
 		c = getc(fdi);
-		if( feof(fdi) ) 
+		if( feof(fdi) )
 			error("Premature EOF\n");
 		if( ferror(fdi) )
 		    error ("Can't read");
