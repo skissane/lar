@@ -44,6 +44,11 @@
  *
  *  * Unix is a trademark of Bell Labs.
  *  ** CP/M is a trademark of Digital Research.
+ *
+ * -------------------------------------------------------------------------
+ * Modified by Simon Kissane, November 2022.
+ * Modernised syntax to ISO/ANSI C.
+ * I place my changes in the public domain (same terms as the original).
  */
 
 #include <stdnoreturn.h>
